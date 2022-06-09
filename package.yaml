@@ -1,6 +1,6 @@
 name:                drink-bot-api
 version:             0.1.0.0
-github:              "githubuser/drink-bot-api"
+github:              "sl1depengwyn/drink-bot-api"
 license:             BSD3
 author:              "Author name here"
 maintainer:          "example@example.com"
@@ -24,6 +24,38 @@ dependencies:
 - servant-server
 - wai
 - warp
+- filepath
+- aeson
+- microlens
+- aeson-extra
+- Chart
+- Chart-cairo
+- colour
+- data-default-class
+- postgresql-simple
+- resource-pool
+- beam-core
+- beam-postgres
+- beam-migrate
+- text
+- bytestring
+- time
+- containers
+
+default-extensions:
+- OverloadedStrings
+- DeriveGeneric
+- DeriveGeneric
+- GADTs
+- OverloadedStrings
+- FlexibleContexts 
+- FlexibleInstances 
+- TypeFamilies 
+- TypeApplications 
+- DeriveAnyClass
+- StandaloneDeriving 
+- TypeSynonymInstances 
+- MultiParamTypeClasses
 
 library:
   source-dirs: src
