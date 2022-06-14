@@ -53,6 +53,7 @@ instance Table RecordT where
         (PrimaryKey UserT f)
         (Columnar f Int32)
     deriving (Generic, Beamable)
+  
   primaryKey = RecordId <$> _ruserId <*> _rmessageId
 
 deriving instance Show (PrimaryKey RecordT Identity)

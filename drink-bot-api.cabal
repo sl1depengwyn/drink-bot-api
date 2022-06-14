@@ -29,9 +29,10 @@ library
       Database.Database
       Database.Migration
       Database.Schema.V001
-      Lib
       Logger
       Plotter.Plotter
+      Server
+      Server.Main
   other-modules:
       Paths_drink_bot_api
   hs-source-dirs:
@@ -67,6 +68,7 @@ library
     , microlens
     , postgresql-simple
     , resource-pool
+    , servant
     , servant-server
     , text
     , time
@@ -113,6 +115,7 @@ executable drink-bot-api-exe
     , microlens
     , postgresql-simple
     , resource-pool
+    , servant
     , servant-server
     , text
     , time
@@ -163,6 +166,7 @@ test-suite drink-bot-api-test
     , microlens
     , postgresql-simple
     , resource-pool
+    , servant
     , servant-server
     , text
     , time
