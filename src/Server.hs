@@ -4,11 +4,13 @@
 
 module Server where
 
+import Control.Monad
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson.Extended as A
 import Data.Aeson.TH
 import Data.ByteString as BS
 import Data.ByteString.Lazy (fromStrict)
-import Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy as BSL
 import Data.Data (Typeable)
 import Data.Fixed
 import Data.Functor.Identity (Identity)
@@ -21,17 +23,35 @@ import GHC.Generics (Generic)
 import qualified Logger
 import Network.Wai
 import Network.Wai.Handler.Warp
+import qualified Plotter.Plotter as Plotter
 import Servant
 import Servant.API.ContentTypes
-import Control.Monad
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader
 
-data Config = Config {cPort :: Int, cToken :: Text} deriving (Generic)
+
+
+data Config = Config {cPort :: Int, cToken :: Text} deriving (Show, Generic)
 
 instance FromJSON Config where
   parseJSON = A.genericParseJSON A.customOptions
 
-data Handle = Handler {hConfig :: Config, hDatabase :: DB.Handle, hLogger :: Logger.Handle}
+data Handle = Handle
+  { hConfig :: Config,
+    hDatabase :: DB.Handle,
+    hPlotter :: Plotter.Handle,
+    hLogger :: Logger.Handle
+  }
+
+type AppM = ReaderT Handle Handler
+
+withHandle ::
+  Config ->
+  DB.Handle ->
+  Plotter.Handle ->
+  Logger.Handle ->
+  (Handle -> IO ()) ->
+  IO ()
+withHandle c db plot logger f = f Handle {hConfig = c, hDatabase = db, hPlotter = plot, hLogger = logger}
 
 data WithCT = WithCT {header :: BS.ByteString, content :: BS.ByteString}
 
@@ -60,43 +80,40 @@ type ServerApi =
     :<|> "getTodayStats" :> QueryParam "userId" Int :> Get '[IMAGE] WithCT
     :<|> "getMonthStats" :> QueryParam "userId" Int :> Get '[IMAGE] WithCT
 
-app :: Application
-app = serve (Proxy @ServerApi) server
 
-server :: Server ServerApi
-server = handleUsers :<|> handleEdit :<|> handleAdd :<|> handleTodayTotal :<|> handleTodayStats :<|> handleMonthStats
+--handleAddUsers :: User -> ServerT ServerApi AppM
+handleAddUsers :: User -> AppM User
+handleAddUsers = return
+  
 
-handleUsers :: User -> Handler User
-handleUsers = return
-
-handleEdit :: (Maybe Int -> Maybe Int -> Maybe Int -> Handler Record)
+handleEdit :: Maybe Int -> Maybe Int -> Maybe Int -> AppM Record
 handleEdit uId mId amount = return (Record (UserId 1) 1 1 (mkUTCTime (1, 1, 1) (1, 1, 1)))
 
-handleAdd :: (Record -> Handler Record)
+handleAdd :: Record -> AppM Record
 handleAdd = return
 
-handleTodayTotal :: (Maybe Int -> Handler Int)
+handleTodayTotal :: Maybe Int -> AppM Int
 handleTodayTotal uId = return 123
 
-handleTodayStats :: (Maybe Int -> Handler WithCT)
+handleTodayStats :: Maybe Int -> AppM WithCT
 handleTodayStats _ = do
   file <- liftIO $ BSL.readFile "test.png"
-  return $ WithCT "image/png" (toStrict file)
+  return $ WithCT "image/png" (BSL.toStrict file)
 
-handleMonthStats :: (Maybe Int -> Handler WithCT)
+handleMonthStats :: Maybe Int -> AppM WithCT
 handleMonthStats = undefined
 
-users :: [User]
-users =
-  [ User 1 (Just 2),
-    User 2 Nothing
-  ]
+api :: Proxy ServerApi
+api = Proxy
 
-startApp :: IO ()
-startApp = run 8080 app
+app :: Handle -> Application
+app h = serve api (hoistServer api (`runReaderT` h) server)
 
-startApp' :: Handle -> IO ()
-startApp' h = run 8080 app
+server :: ServerT ServerApi AppM
+server = handleAddUsers :<|> handleEdit :<|> handleAdd :<|> handleTodayTotal :<|> handleTodayStats :<|> handleMonthStats
+
+startApp :: Handle -> IO ()
+startApp h = run port (app h)
   where
     port = cPort (hConfig h)
 

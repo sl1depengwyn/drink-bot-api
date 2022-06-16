@@ -1,7 +1,6 @@
 module Main where
 
-import Server.Main
-import Server
+import qualified Server.Main
 
 main :: IO ()
-main = startApp
+main = Server.Main.main

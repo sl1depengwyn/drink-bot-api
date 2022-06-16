@@ -42,6 +42,9 @@ dependencies:
 - bytestring
 - time
 - containers
+- yaml
+- mtl
+
 
 default-extensions:
 - OverloadedStrings

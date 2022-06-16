@@ -66,6 +66,7 @@ library
     , data-default-class
     , filepath
     , microlens
+    , mtl
     , postgresql-simple
     , resource-pool
     , servant
@@ -74,6 +75,7 @@ library
     , time
     , wai
     , warp
+    , yaml
   default-language: Haskell2010
 
 executable drink-bot-api-exe
@@ -113,6 +115,7 @@ executable drink-bot-api-exe
     , drink-bot-api
     , filepath
     , microlens
+    , mtl
     , postgresql-simple
     , resource-pool
     , servant
@@ -121,6 +124,7 @@ executable drink-bot-api-exe
     , time
     , wai
     , warp
+    , yaml
   default-language: Haskell2010
 
 test-suite drink-bot-api-test
@@ -164,6 +168,7 @@ test-suite drink-bot-api-test
     , hspec-wai
     , hspec-wai-json
     , microlens
+    , mtl
     , postgresql-simple
     , resource-pool
     , servant
@@ -172,4 +177,5 @@ test-suite drink-bot-api-test
     , time
     , wai
     , warp
+    , yaml
   default-language: Haskell2010
