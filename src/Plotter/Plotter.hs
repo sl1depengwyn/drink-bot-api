@@ -32,7 +32,7 @@ mkEC xAxisName records = do
   plot $ plotBars <$> bars [""] (map (\(x, y) -> (x, [y])) records)
 
 mkPath :: FilePath -> UTCTime -> FilePath
-mkPath path time = path </> (formatTime defaultTimeLocale "%H%M%S" time <> ".png")
+mkPath path time = path </> (formatTime defaultTimeLocale "%H%M%S%q" time <> ".png")
 
 plotStats :: (PlotValue x, BarsPlotValue y) => Handle -> String -> [(x, y)] -> IO ByteString
 plotStats h xAxisName records = do
