@@ -95,7 +95,9 @@ getSumAmountOf' cmp = runSelectReturningOne $
 getSumTodaysAmount' :: (MonadBeam Postgres m, Num amount) => Int32 -> UTCTime -> m (Maybe (Maybe amount))
 getSumTodaysAmount' uId t =
   let (year, month, day) = toGregorian $ utctDay t
-   in fmap (fmap (fmap (fmap fromIntegral))) getSumAmountOf'
+   in fmap
+        (fmap (fmap (fmap fromIntegral)))
+        getSumAmountOf'
         ( \record ->
             (record ^. recordUId ==. val_ uId)
               &&. (extract_ year_ (record ^. recordTStamp) ==. val_ (fromIntegral year))
@@ -200,7 +202,7 @@ addButton' userId amount =
       anyConflict
       onConflictDoNothing
 
-addButton :: Handle -> Int -> Int -> IO ()
+addButton :: Integral a => Handle -> a -> a -> IO ()
 addButton h userId amount = runQuery h (addButton' (fromIntegral userId) (fromIntegral amount))
 
 removeButton' :: MonadBeam Postgres m => Int32 -> Int32 -> m ()
@@ -210,7 +212,7 @@ removeButton' userId amount =
       (drinkDb ^. drinkButtons)
       (\b -> val_ (Button (UserId userId) amount) ==. b)
 
-removeButton :: Handle -> Int -> Int -> IO ()
+removeButton :: Integral a => Handle -> a -> a -> IO ()
 removeButton h userId amount = runQuery h (removeButton' (fromIntegral userId) (fromIntegral amount))
 
 getButtons' :: MonadBeam Postgres m => Int32 -> m [Int32]

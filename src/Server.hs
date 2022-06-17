@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Server where
@@ -78,6 +77,9 @@ type ServerApi =
     :<|> "getTodayTotal" :> QueryParam "userId" Int :> Get '[JSON] (Maybe Int)
     :<|> "getTodayStats" :> QueryParam "userId" Int :> Get '[IMAGE] WithCT
     :<|> "getMonthStats" :> QueryParam "userId" Int :> Get '[IMAGE] WithCT
+    :<|> "addButton" :> ReqBody '[JSON] Button :> Post '[JSON] Bool
+    :<|> "removeButton" :> ReqBody '[JSON] Button :> Delete '[JSON] NoContent
+    :<|> "getButtons" :> QueryParam "userId" Int :> Get '[JSON] [Int]
 
 askLogger :: AppM Logger.Handle
 askLogger = asks hLogger
@@ -88,14 +90,14 @@ askDbh = asks hDatabase
 askPlotter :: AppM Plotter.Handle
 askPlotter = asks hPlotter
 
-handleAddUsers :: User -> AppM NoContent
-handleAddUsers u = do
+handleAddUser :: User -> AppM NoContent
+handleAddUser u = do
   dbh <- askDbh
   liftIO (DB.addUser dbh (u ^. userId))
   pure NoContent
 
-handleEdit :: Maybe Int -> Maybe Int -> Maybe Int -> AppM Bool
-handleEdit uId mId amount = do
+handleEditRecord :: Maybe Int -> Maybe Int -> Maybe Int -> AppM Bool
+handleEditRecord uId mId amount = do
   dbh <- askDbh
   case (uId, mId, amount) of
     (Just uId', Just mId', Just amount') -> do
@@ -103,14 +105,14 @@ handleEdit uId mId amount = do
       pure True
     (_, _, _) -> pure False
 
-handleAdd :: Record -> AppM Bool
-handleAdd r = do
+handleAddRecord :: Record -> AppM Bool
+handleAddRecord r = do
   dbh <- askDbh
   liftIO (DB.addRecord dbh (r ^. recordUId) (r ^. recordMId) (r ^. recordAmount) (r ^. recordTStamp))
   pure True
 
-handleTodayTotal :: Maybe Int -> AppM (Maybe Int)
-handleTodayTotal uId = do
+handleGetTodayTotal :: Maybe Int -> AppM (Maybe Int)
+handleGetTodayTotal uId = do
   case uId of
     (Just uId') -> do
       dbh <- askDbh
@@ -120,8 +122,8 @@ handleTodayTotal uId = do
         _ -> pure Nothing
     _ -> pure Nothing
 
-handleTodayStats :: Maybe Int -> AppM WithCT
-handleTodayStats uId = do
+handleGetTodayStats :: Maybe Int -> AppM WithCT
+handleGetTodayStats uId = do
   case uId of
     (Just uId') -> do
       dbh <- askDbh
@@ -131,8 +133,8 @@ handleTodayStats uId = do
       return (WithCT "image/png" image)
     _ -> pure (WithCT "" "")
 
-handleMonthStats :: Maybe Int -> AppM WithCT
-handleMonthStats uId = do
+handleGetMonthStats :: Maybe Int -> AppM WithCT
+handleGetMonthStats uId =
   case uId of
     (Just uId') -> do
       dbh <- askDbh
@@ -142,6 +144,26 @@ handleMonthStats uId = do
       return (WithCT "image/png" image)
     _ -> pure (WithCT "" "")
 
+handleAddButton :: Button -> AppM Bool
+handleAddButton button = do
+  dbh <- askDbh
+  liftIO (DB.addButton dbh (button ^. buttonUId) (button ^. buttonAmount))
+  pure True
+
+handleRemoveButton :: Button -> AppM NoContent
+handleRemoveButton button = do
+  dbh <- askDbh
+  liftIO (DB.removeButton dbh (button ^. buttonUId) (button ^. buttonAmount))
+  pure NoContent
+
+handleGetButtons :: Maybe Int -> AppM [Int]
+handleGetButtons uId =
+  case uId of
+    (Just uId') -> do
+      dbh <- askDbh
+      liftIO (DB.getButtons dbh uId')
+    _ -> pure []
+
 api :: Proxy ServerApi
 api = Proxy
 
@@ -149,7 +171,16 @@ app :: Handle -> Application
 app h = serve api (hoistServer api (`runReaderT` h) server)
 
 server :: ServerT ServerApi AppM
-server = handleAddUsers :<|> handleEdit :<|> handleAdd :<|> handleTodayTotal :<|> handleTodayStats :<|> handleMonthStats
+server =
+  handleAddUser
+    :<|> handleEditRecord
+    :<|> handleAddRecord
+    :<|> handleGetTodayTotal
+    :<|> handleGetTodayStats
+    :<|> handleGetMonthStats
+    :<|> handleAddButton
+    :<|> handleRemoveButton
+    :<|> handleGetButtons
 
 startApp :: Handle -> IO ()
 startApp h = run port (app h)
@@ -168,6 +199,9 @@ instance ToJSON (PrimaryKey RecordT Identity) where
 instance ToJSON Record where
   toJSON = A.genericToJSON A.customOptions
 
+instance ToJSON Button where
+  toJSON = A.genericToJSON A.customOptions
+
 instance FromJSON User where
   parseJSON = A.genericParseJSON A.customOptions
 
@@ -178,4 +212,7 @@ instance FromJSON (PrimaryKey RecordT Identity) where
   parseJSON = A.genericParseJSON A.customOptions
 
 instance FromJSON Record where
+  parseJSON = A.genericParseJSON A.customOptions
+
+instance FromJSON Button where
   parseJSON = A.genericParseJSON A.customOptions
