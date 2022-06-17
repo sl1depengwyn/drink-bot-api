@@ -66,7 +66,7 @@ addRecord' userId messageId amount t =
       insertValues
         [Record (UserId userId) messageId amount t]
 
-addRecord :: Handle -> Int -> Int -> Int -> UTCTime -> IO ()
+addRecord :: (Integral a1, Integral a2, Integral a3) => Handle -> a1 -> a2 -> a3 -> UTCTime -> IO ()
 addRecord h uId mId amount t = runQuery h (addRecord' (fromIntegral uId) (fromIntegral mId) (fromIntegral amount) t)
 
 addUser' :: MonadBeam Postgres m => Int32 -> m ()
@@ -92,10 +92,10 @@ getSumAmountOf' cmp = runSelectReturningOne $
         record <- filter_ cmp $ all_ $ drinkDb ^. drinkRecords
         pure $ record ^. recordAmount
 
-getSumTodaysAmount' :: MonadBeam Postgres m => Int32 -> UTCTime -> m (Maybe (Maybe Int32))
+getSumTodaysAmount' :: (MonadBeam Postgres m, Num amount) => Int32 -> UTCTime -> m (Maybe (Maybe amount))
 getSumTodaysAmount' uId t =
   let (year, month, day) = toGregorian $ utctDay t
-   in getSumAmountOf'
+   in fmap (fmap (fmap (fmap fromIntegral))) getSumAmountOf'
         ( \record ->
             (record ^. recordUId ==. val_ uId)
               &&. (extract_ year_ (record ^. recordTStamp) ==. val_ (fromIntegral year))
@@ -103,7 +103,7 @@ getSumTodaysAmount' uId t =
               &&. (extract_ day_ (record ^. recordTStamp) ==. val_ (fromIntegral day))
         )
 
-getSumTodaysAmount :: Handle -> Int -> IO (Maybe (Maybe Int32))
+getSumTodaysAmount :: Num amount => Handle -> Int -> IO (Maybe (Maybe amount))
 getSumTodaysAmount h user = getCurrentTime >>= runQuery h . getSumTodaysAmount' (fromIntegral user)
 
 getRecordsOf' ::

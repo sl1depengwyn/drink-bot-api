@@ -61,6 +61,7 @@ library
     , beam-migrate
     , beam-postgres
     , bytestring
+    , cairo
     , colour
     , containers
     , data-default-class
@@ -109,6 +110,7 @@ executable drink-bot-api-exe
     , beam-migrate
     , beam-postgres
     , bytestring
+    , cairo
     , colour
     , containers
     , data-default-class
@@ -159,6 +161,7 @@ test-suite drink-bot-api-test
     , beam-migrate
     , beam-postgres
     , bytestring
+    , cairo
     , colour
     , containers
     , data-default-class

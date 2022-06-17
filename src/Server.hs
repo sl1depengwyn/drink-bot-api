@@ -6,6 +6,7 @@ module Server where
 
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader
 import Data.Aeson.Extended as A
 import Data.Aeson.TH
 import Data.ByteString as BS
@@ -20,15 +21,13 @@ import Data.Time.Extended
 import qualified Database.Database as DB
 import Database.Schema.V001
 import GHC.Generics (Generic)
+import Lens.Micro
 import qualified Logger
 import Network.Wai
 import Network.Wai.Handler.Warp
 import qualified Plotter.Plotter as Plotter
 import Servant
 import Servant.API.ContentTypes
-import Control.Monad.Reader
-
-
 
 data Config = Config {cPort :: Int, cToken :: Text} deriving (Show, Generic)
 
@@ -73,32 +72,66 @@ type API = "users" :> Get '[JSON] [User]
 type API2 = "delete" :> DeleteNoContent
 
 type ServerApi =
-  "addUser" :> ReqBody '[JSON] User :> Post '[JSON] User
-    :<|> "editRecord" :> QueryParam "userId" Int :> QueryParam "messageId" Int :> QueryParam "amount" Int :> Put '[JSON] Record
-    :<|> "addRecord" :> ReqBody '[JSON] Record :> Post '[JSON] Record
-    :<|> "getTodayTotal" :> QueryParam "userId" Int :> Get '[JSON] Int
+  "addUser" :> ReqBody '[JSON] User :> Post '[JSON] NoContent
+    :<|> "editRecord" :> QueryParam "userId" Int :> QueryParam "messageId" Int :> QueryParam "amount" Int :> Put '[JSON] Bool
+    :<|> "addRecord" :> ReqBody '[JSON] Record :> Post '[JSON] Bool
+    :<|> "getTodayTotal" :> QueryParam "userId" Int :> Get '[JSON] (Maybe Int)
     :<|> "getTodayStats" :> QueryParam "userId" Int :> Get '[IMAGE] WithCT
     :<|> "getMonthStats" :> QueryParam "userId" Int :> Get '[IMAGE] WithCT
 
+askLogger :: AppM Logger.Handle
+askLogger = asks hLogger
 
---handleAddUsers :: User -> ServerT ServerApi AppM
-handleAddUsers :: User -> AppM User
-handleAddUsers = return
-  
+askDbh :: AppM DB.Handle
+askDbh = asks hDatabase
 
-handleEdit :: Maybe Int -> Maybe Int -> Maybe Int -> AppM Record
-handleEdit uId mId amount = return (Record (UserId 1) 1 1 (mkUTCTime (1, 1, 1) (1, 1, 1)))
+askPlotter :: AppM Plotter.Handle
+askPlotter = asks hPlotter
 
-handleAdd :: Record -> AppM Record
-handleAdd = return
+handleAddUsers :: User -> AppM NoContent
+handleAddUsers u = do
+  dbh <- askDbh
+  liftIO (DB.addUser dbh (u ^. userId))
+  pure NoContent
 
-handleTodayTotal :: Maybe Int -> AppM Int
-handleTodayTotal uId = return 123
+handleEdit :: Maybe Int -> Maybe Int -> Maybe Int -> AppM Bool
+handleEdit uId mId amount = do
+  dbh <- askDbh
+  case (uId, mId, amount) of
+    (Just uId', Just mId', Just amount') -> do
+      liftIO (DB.updateRecord dbh uId' mId' amount')
+      pure True
+    (_, _, _) -> pure False
+
+handleAdd :: Record -> AppM Bool
+handleAdd r = do
+  dbh <- askDbh
+  liftIO (DB.addRecord dbh (r ^. recordUId) (r ^. recordMId) (r ^. recordAmount) (r ^. recordTStamp))
+  pure True
+
+handleTodayTotal :: Maybe Int -> AppM (Maybe Int)
+handleTodayTotal uId = do
+  case uId of
+    (Just uId') -> do
+      dbh <- askDbh
+      amount <- liftIO (DB.getSumTodaysAmount dbh uId')
+      case amount of
+        (Just v) -> pure v
+        _ -> pure Nothing
+    _ -> pure Nothing
 
 handleTodayStats :: Maybe Int -> AppM WithCT
-handleTodayStats _ = do
-  file <- liftIO $ BSL.readFile "test.png"
-  return $ WithCT "image/png" (BSL.toStrict file)
+handleTodayStats uId = do
+  case uId of
+    (Just uId') -> do
+      dbh <- askDbh
+      plotterh <- askPlotter
+      stats <- liftIO (DB.getTodaysRecordsStats dbh uId')
+      image <- liftIO (Plotter.plotDayStats plotterh stats)
+      return (WithCT "image/png" image)
+    _ -> do
+      liftIO (Prelude.putStrLn "failure")
+      pure (WithCT "" "")
 
 handleMonthStats :: Maybe Int -> AppM WithCT
 handleMonthStats = undefined
