@@ -16,6 +16,7 @@ import Data.Fixed
 import Data.Functor.Identity (Identity)
 import Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
 import Data.Time.Extended
 import qualified Database.Database as DB
 import Database.Schema.V001
@@ -80,6 +81,15 @@ type ServerApi =
     :<|> "addButton" :> ReqBody '[JSON] Button :> Post '[JSON] Bool
     :<|> "removeButton" :> ReqBody '[JSON] Button :> Delete '[JSON] NoContent
     :<|> "getButtons" :> QueryParam "userId" Int :> Get '[JSON] [Int]
+
+type ProtectedApi = BasicAuth "Dring Enough API" () :> ServerApi
+
+checkBasicAuth :: Handle -> BasicAuthCheck ()
+checkBasicAuth h = BasicAuthCheck $ \basicAuthData ->
+  let password = Text.decodeUtf8 (basicAuthPassword basicAuthData)
+   in if password == cToken (hConfig h)
+        then pure (Authorized ())
+        else pure BadPassword
 
 askLogger :: AppM Logger.Handle
 askLogger = asks hLogger
@@ -164,14 +174,19 @@ handleGetButtons uId =
       liftIO (DB.getButtons dbh uId')
     _ -> pure []
 
-api :: Proxy ServerApi
+api :: Proxy ProtectedApi
 api = Proxy
 
 app :: Handle -> Application
-app h = serve api (hoistServer api (`runReaderT` h) server)
+app h = serveWithContext api ctx (hoistServerWithContext api ctx' (`runReaderT` h) server)
+  where
+    ctx' :: Proxy '[BasicAuthCheck ()]
+    ctx' = Proxy
 
-server :: ServerT ServerApi AppM
-server =
+    ctx = checkBasicAuth h :. EmptyContext
+
+server :: ServerT ProtectedApi AppM
+server _ =
   handleAddUser
     :<|> handleEditRecord
     :<|> handleAddRecord
