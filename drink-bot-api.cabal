@@ -33,6 +33,7 @@ library
       Plotter.Plotter
       Server
       Server.Main
+      System.Directory.Extended
   other-modules:
       Paths_drink_bot_api
   hs-source-dirs:
@@ -61,10 +62,10 @@ library
     , beam-migrate
     , beam-postgres
     , bytestring
-    , cairo
     , colour
     , containers
     , data-default-class
+    , directory
     , filepath
     , microlens
     , mtl
@@ -110,10 +111,10 @@ executable drink-bot-api-exe
     , beam-migrate
     , beam-postgres
     , bytestring
-    , cairo
     , colour
     , containers
     , data-default-class
+    , directory
     , drink-bot-api
     , filepath
     , microlens
@@ -161,10 +162,10 @@ test-suite drink-bot-api-test
     , beam-migrate
     , beam-postgres
     , bytestring
-    , cairo
     , colour
     , containers
     , data-default-class
+    , directory
     , drink-bot-api
     , filepath
     , hspec

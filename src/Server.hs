@@ -129,12 +129,18 @@ handleTodayStats uId = do
       stats <- liftIO (DB.getTodaysRecordsStats dbh uId')
       image <- liftIO (Plotter.plotDayStats plotterh stats)
       return (WithCT "image/png" image)
-    _ -> do
-      liftIO (Prelude.putStrLn "failure")
-      pure (WithCT "" "")
+    _ -> pure (WithCT "" "")
 
 handleMonthStats :: Maybe Int -> AppM WithCT
-handleMonthStats = undefined
+handleMonthStats uId = do
+  case uId of
+    (Just uId') -> do
+      dbh <- askDbh
+      plotterh <- askPlotter
+      stats <- liftIO (DB.getMonthRecordsStats dbh uId')
+      image <- liftIO (Plotter.plotMonthStats plotterh stats)
+      return (WithCT "image/png" image)
+    _ -> pure (WithCT "" "")
 
 api :: Proxy ServerApi
 api = Proxy

@@ -44,7 +44,7 @@ dependencies:
 - containers
 - yaml
 - mtl
-- cairo
+- directory
 
 
 default-extensions:
