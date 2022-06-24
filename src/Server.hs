@@ -9,7 +9,7 @@ import Control.Monad.Reader
 import Data.Aeson.Extended as A
 import Data.Aeson.TH
 import Data.ByteString as BS
-import Data.ByteString.Lazy (fromStrict)
+import Data.ByteString.Lazy (fromStrict, toStrict)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Data (Typeable)
 import Data.Fixed
@@ -140,7 +140,7 @@ handleGetTodayStats uId = do
       plotterh <- askPlotter
       stats <- liftIO (DB.getTodaysRecordsStats dbh uId')
       image <- liftIO (Plotter.plotDayStats plotterh stats)
-      return (WithCT "image/png" image)
+      return (WithCT "image/png" (toStrict image))
     _ -> pure (WithCT "" "")
 
 handleGetMonthStats :: Maybe Int -> AppM WithCT
@@ -151,7 +151,7 @@ handleGetMonthStats uId =
       plotterh <- askPlotter
       stats <- liftIO (DB.getMonthRecordsStats dbh uId')
       image <- liftIO (Plotter.plotMonthStats plotterh stats)
-      return (WithCT "image/png" image)
+      return (WithCT "image/png" (toStrict image))
     _ -> pure (WithCT "" "")
 
 handleAddButton :: Button -> AppM Bool

@@ -55,13 +55,16 @@ library
   build-depends:
       Chart
     , Chart-cairo
+    , JuicyPixels
     , aeson
     , aeson-extra
+    , array
     , base >=4.7 && <5
     , beam-core
     , beam-migrate
     , beam-postgres
     , bytestring
+    , cairo
     , colour
     , containers
     , data-default-class
@@ -75,6 +78,7 @@ library
     , servant-server
     , text
     , time
+    , vector
     , wai
     , warp
     , yaml
@@ -104,13 +108,16 @@ executable drink-bot-api-exe
   build-depends:
       Chart
     , Chart-cairo
+    , JuicyPixels
     , aeson
     , aeson-extra
+    , array
     , base
     , beam-core
     , beam-migrate
     , beam-postgres
     , bytestring
+    , cairo
     , colour
     , containers
     , data-default-class
@@ -125,6 +132,7 @@ executable drink-bot-api-exe
     , servant-server
     , text
     , time
+    , vector
     , wai
     , warp
     , yaml
@@ -155,13 +163,16 @@ test-suite drink-bot-api-test
   build-depends:
       Chart
     , Chart-cairo
+    , JuicyPixels
     , aeson
     , aeson-extra
+    , array
     , base
     , beam-core
     , beam-migrate
     , beam-postgres
     , bytestring
+    , cairo
     , colour
     , containers
     , data-default-class
@@ -179,6 +190,7 @@ test-suite drink-bot-api-test
     , servant-server
     , text
     , time
+    , vector
     , wai
     , warp
     , yaml
