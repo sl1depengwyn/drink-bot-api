@@ -9,7 +9,7 @@ import Control.Monad.Reader
 import Data.Aeson.Extended as A
 import Data.Aeson.TH
 import Data.ByteString as BS
-import Data.ByteString.Lazy (fromStrict, toStrict)
+import Data.ByteString.Lazy (fromStrict, toStrict)  
 import qualified Data.ByteString.Lazy as BSL
 import Data.Data (Typeable)
 import Data.Fixed
@@ -66,10 +66,6 @@ instance Accept IMAGE where
   contentType _ = ""
 
 type ImageApi = Capture "image_id" Int :> Get '[IMAGE] WithCT
-
-type API = "users" :> Get '[JSON] [User]
-
-type API2 = "delete" :> DeleteNoContent
 
 type ServerApi =
   "addUser" :> ReqBody '[JSON] User :> Post '[JSON] NoContent
@@ -142,7 +138,7 @@ handleGetTodayStats uId = do
       image <- liftIO (Plotter.plotDayStats plotterh stats)
       return (WithCT "image/png" (toStrict image))
     _ -> pure (WithCT "" "")
-
+  
 handleGetMonthStats :: Maybe Int -> AppM WithCT
 handleGetMonthStats uId =
   case uId of
